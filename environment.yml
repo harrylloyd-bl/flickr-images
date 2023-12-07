@@ -1,0 +1,15 @@
+name: flickr-ml
+channels:
+  - conda-forge
+dependencies:
+  - requests
+  - pandas
+  - ipykernel
+  - matplotlib
+  - transformers
+  - pytorch
+  - torchvision
+  - torchaudio
+  - cpuonly
+  - cuda-cudart
+prefix: C:\Users\HLloyd\AppData\Local\mambaforge\envs\flickr-ml
