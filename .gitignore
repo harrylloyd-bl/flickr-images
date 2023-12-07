@@ -87,3 +87,7 @@ target/
 
 # Mypy cache
 .mypy_cache/
+
+# flickr api secrets
+flickr_api_session_auth.txt
+flickr_keys.py
