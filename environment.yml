@@ -1,6 +1,8 @@
 name: flickr-ml
 channels:
   - conda-forge
+  - nvidia
+  - pytorch
 dependencies:
   - requests
   - pandas
