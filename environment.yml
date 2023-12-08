@@ -15,4 +15,8 @@ dependencies:
   - cpuonly
   - cuda-cudart
   - nbgitpuller
+  - pip:
+      - flickr-api==0.7.7
+      - httplib2==0.22.0
+      - oauth2==1.9.0.post1
 prefix: C:\Users\HLloyd\AppData\Local\mambaforge\envs\flickr-ml
