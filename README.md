@@ -3,7 +3,7 @@ Flickr Hack & Yack
 
 This is the binder environment branch for the December 2023 Hack N' Yack about the BL's Flickr images. Data and notebooks for interactive use in the Hack & Yack are in the content branch (https://github.com/harrylloyd-bl/flickr-hny/tree/hny-content). To launch binder to use the notebook click the link below!
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/harrylloyd-bl/flickr-hny/hny-env?urlpath=git-pull?repo=https://github.com/harrylloyd-bl/flickr-hny/hny-content)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/harrylloyd-bl/flickr-hny/hny-env?urlpath=git-pull?repo=https://github.com/harrylloyd-bl/flickr-hny/tree/hny-content)
 
 Project Organization
 ------------
