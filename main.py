@@ -79,22 +79,24 @@ for i, p in tqdm(enumerate(photo_walker[:5]), total=len(photo_walker)):
 
             unmatched_tags = list(set(flkr_tags) - set([x[0] for x in combined_rr_tag_dct.get(image_idx, ["empty_set"])]))
             if rr_tags_exist and unmatched_tags:
+                logging.debug(f"{len(unmatched_tags)} Flickr tags not in RR, saving")
                 snet_tags_from_flkr[flkr_cat][image_idx] = unmatched_tags
             elif not rr_tags_exist:
+                logging.debug(f"All Flickr tags not in RR, saving")
                 snet_tags_from_flkr[flkr_cat][image_idx] = unmatched_tags
 
         elif flkr_cat and not rr_cat:  # tags on Flickr but not in RR
-            unmatched_tags = list(
-                set(flkr_tags) - set([x[0] for x in combined_rr_tag_dct.get(image_idx, ["empty_set"])]))
+            logging.debug(f"All Flickr tags not in RR, saving")
+            unmatched_tags = list(set(flkr_tags) - set([x[0] for x in combined_rr_tag_dct.get(image_idx, ["empty_set"])]))
             snet_tags_from_flkr[flkr_cat][image_idx] = unmatched_tags
 
         # Remove tags from Flickr
         sherlocknet_tags = [t for t in p.tags if "sherlocknet" in t.text]
+        logging.debug(f"Removing tags from {p.id}")
         for st in sherlocknet_tags:
-            logging.debug(f"Removing tag id={st.id} author={st.author.id} raw={st.raw}")
             try:
-                # st.remove()
-                logging.debug(f"Removed {st.id}")
+                # st.remove()  # commented out for safety during testing
+                logging.debug(f"Removing tag id={st.id} author={st.author.id} raw={st.raw}")
             except:
                 logging.error(f"Failed to remove {st.id}")
 
