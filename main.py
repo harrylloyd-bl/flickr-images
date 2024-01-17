@@ -2,32 +2,24 @@ import logging
 import re
 import glob
 import pickle
-import json
+from datetime import datetime
 
 import flickr_api as fa
 import pandas as pd
 from tqdm import tqdm
 
-logging.basicConfig(filename='logs\\trial_run.log',
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M',
-                    encoding='utf-8',
-                    level=logging.DEBUG)
+from src.utils import start_loggers
 
-progress = logging.FileHandler(filename='logs\\progress.log')
-progress.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M')
-progress.setFormatter(formatter)
-logging.getLogger("").addHandler(progress)
+today = datetime.now().strftime("%y%m%d")
+complete_log = f"logs\\{today}_debug.log"
+progress_log = f"logs\\progress.log"
 
-# *** This auth has WRITE permissions, take care ***
-fa.set_auth_handler("flickr_api_session_auth_w.txt")  # or whatever you save your auth file as
-
-user = fa.Person(id='12403504@N02')  # This is the BL's id
+# All logging statements go to complete_log, only logging.info statements go to progress_log
+start_loggers(complete_log, progress_log)
 
 # lookup tables
 category_tags = pd.read_csv("data\\external\\sherlocknet_tags_csv\\sherlock_flickr_tags.csv", index_col="flickr_id")
-rr_cat_tag_pkls = glob.glob("data\\external\\sherlocknet-tags\\tags\\*.pkl")
+rr_cat_tag_pkls = glob.glob("data\\external\\sherlocknet-tags\\tags\\*.pkl")  # rr = BL research repository
 combined_rr_tag_dct = {}
 for p in rr_cat_tag_pkls:
     with open(p, "rb") as f:
@@ -52,6 +44,10 @@ def parse_tags(tag_str, tag_re):
     return res["category"].pop(), res["tag"]
 
 
+# Get BL images
+# *** This auth has WRITE permissions, take care ***
+fa.set_auth_handler("flickr_api_session_auth_w.txt")
+user = fa.Person(id='12403504@N02')  # BL id
 photo_walker = fa.Walker(user.getPhotos, extras="machine_tags")
 tag_re = re.compile(r"(?P<snet>[a-z]*:)(?P<type>[a-z]*=)(?P<text>[a-z]*(?=\Z))")
 
@@ -62,7 +58,7 @@ snet_tags_from_flkr = {k: {} for k in flkr_snet_cats}
 flkr_rr_cat_mapping = {}
 
 for i, p in tqdm(enumerate(photo_walker[:5]), total=len(photo_walker)):
-    logging.info(f"Processing # {i} {p.id}")
+    logging.info(f"Processing # {i} {p.id}")  # i is the (stable) position in the list of BL images
     if not p.machine_tags:  # skip any that don't have machine tags
         logging.debug(f"No machine tags for {p.id}")
     else:
@@ -76,22 +72,23 @@ for i, p in tqdm(enumerate(photo_walker[:5]), total=len(photo_walker)):
         flkr_cat, flkr_tags = parse_tags(p.machine_tags, tag_re)
         logging.debug(f"{p.id} has {len(flkr_tags)} machine tags")
 
-        if flkr_cat and rr_cat:
+        # Compare Flickr with RR to see if need to save any tags
+        if flkr_cat and rr_cat:  # tags on Flickr and in the RR
             if flkr_cat != rr_cat:
                 flkr_rr_cat_mapping[image_idx] = [flkr_cat, rr_cat]
 
-            unmatched_tags = list(
-                set(flkr_tags) - set([x[0] for x in combined_rr_tag_dct.get(image_idx, ["empty_set"])]))
+            unmatched_tags = list(set(flkr_tags) - set([x[0] for x in combined_rr_tag_dct.get(image_idx, ["empty_set"])]))
             if rr_tags_exist and unmatched_tags:
                 snet_tags_from_flkr[flkr_cat][image_idx] = unmatched_tags
             elif not rr_tags_exist:
                 snet_tags_from_flkr[flkr_cat][image_idx] = unmatched_tags
 
-        elif flkr_cat and not rr_cat:
+        elif flkr_cat and not rr_cat:  # tags on Flickr but not in RR
             unmatched_tags = list(
                 set(flkr_tags) - set([x[0] for x in combined_rr_tag_dct.get(image_idx, ["empty_set"])]))
             snet_tags_from_flkr[flkr_cat][image_idx] = unmatched_tags
 
+        # Remove tags from Flickr
         sherlocknet_tags = [t for t in p.tags if "sherlocknet" in t.text]
         for st in sherlocknet_tags:
             logging.debug(f"Removing tag id={st.id} author={st.author.id} raw={st.raw}")
@@ -100,3 +97,5 @@ for i, p in tqdm(enumerate(photo_walker[:5]), total=len(photo_walker)):
                 logging.debug(f"Removed {st.id}")
             except:
                 logging.error(f"Failed to remove {st.id}")
+
+# TODO serialise saved tags as json in same format as research repository
