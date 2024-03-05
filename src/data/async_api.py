@@ -8,6 +8,7 @@ import flickr_api as fa
 from flickr_api.method_call import prep_api_args
 from flickr_api.flickrerrors import FlickrServerError, FlickrAPIError
 import httpx
+from tqdm.asyncio import trange
 
 print("\nInitialising loggers")
 today = datetime.now().strftime("%y%m%d")
@@ -63,7 +64,7 @@ def parse_tags(tag_str):
 
 # get a list of all images with sherlocknet machine tags
 async def save_snet_tags(page, per_page, client, db):
-    print(f"Page {page}")
+    # print(f"Page {page}")
     getPhotos_args = {'method': 'flickr.people.getPhotos', 'extras': 'machine_tags', 'page': page,
                       'per_page': per_page, 'user_id': '12403504@N02'}
 
@@ -72,7 +73,7 @@ async def save_snet_tags(page, per_page, client, db):
 
     try:
         resp = await client.post(url=rest_url, data=api_args, timeout=20)
-        print(f"{page} {resp.status_code}")
+        # print(f"{page} {resp.status_code}")
     except httpx.PoolTimeout:
         logging.error(f"Page {page} failed due to timeout")
         return None
@@ -109,24 +110,24 @@ async def save_snet_tags(page, per_page, client, db):
                         break
                     except sqlite3.OperationalError:
                         retry += 1
-                        print(f"retry {retry}")
+                        # print(f"retry {retry}")
                 if retry == 3:
                     logging.error(f"{p['id']} failed due to db lock")
-        print(f"{page} complete")
+        # print(f"{page} complete")
 
 
 async def main(db, per_page):
     async with httpx.AsyncClient() as client:
         # @ 500 photos per page there are 2148 pages total
-        # for i in range(1907, 2107, 25):
-        tasks = []
+        async for i in trange(1, 2107, 25):
+            tasks = []
 
-        for page in range(2107, 2149):
-            tasks.append(
-                save_snet_tags(page=page, per_page=per_page, client=client, db=db)
-            )
+            for page in range(i, i + 25):
+                tasks.append(
+                    save_snet_tags(page=page, per_page=per_page, client=client, db=db)
+                )
 
-        await asyncio.gather(*tasks)
+            await asyncio.gather(*tasks)
 
 
 fa.set_auth_handler("..\\..\\flickr_api_session_auth_w.txt")
